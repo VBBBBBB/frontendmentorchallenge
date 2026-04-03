@@ -95,7 +95,7 @@ function render() {
                         <i data-lucide="${ext.icon}"></i>
                     </div>
                     <div class="ext-title">
-                        <h3>${ext.name}</h3>
+                        <h2>${ext.name}</h2>
                         <span>${ext.version} • ${ext.author}</span>
                     </div>
                 </div>
@@ -106,11 +106,11 @@ function render() {
                         ${statusCapitalized}
                     </div>
                     <div class="card-actions">
-                        <button class="icon-btn" onclick="toggleExt('${ext.id}')" title="${ext.status === 'active' ? 'Disable' : 'Enable'}">
-                            <i data-lucide="power" ${powerColor}></i>
+                        <button class="icon-btn" onclick="toggleExt('${ext.id}')" title="${ext.status === 'active' ? 'Disable' : 'Enable'} extension" aria-label="${ext.status === 'active' ? 'Disable' : 'Enable'} ${ext.name}">
+                            <i data-lucide="power" ${powerColor} aria-hidden="true"></i>
                         </button>
-                        <button class="icon-btn delete" onclick="openDeleteModal('${ext.id}')" title="Remove">
-                            <i data-lucide="trash-2"></i>
+                        <button class="icon-btn delete" onclick="openDeleteModal('${ext.id}')" title="Remove extension" aria-label="Remove ${ext.name}">
+                            <i data-lucide="trash-2" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -162,18 +162,25 @@ window.toggleExt = function(id) {
     render();
 };
 
+let lastFocusedElement = null;
+
 window.openDeleteModal = function(id) {
     const ext = extensions.find(e => e.id === id);
     if (ext) {
+        lastFocusedElement = document.activeElement;
         itemToDeleteId = id;
         modalExtName.textContent = ext.name;
         deleteModal.style.display = 'flex';
+        cancelBtn.focus();
     }
 };
 
 function closeDeleteModal() {
     deleteModal.style.display = 'none';
     itemToDeleteId = null;
+    if (lastFocusedElement) {
+        lastFocusedElement.focus();
+    }
 }
 
 function confirmDelete() {
