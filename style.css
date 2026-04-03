@@ -28,6 +28,14 @@
   --shadow-hover: 0 10px 20px rgba(0,0,0,0.4);
 }
 
+.hidden {
+  display: none !important;
+}
+
+.power-active {
+  color: var(--success-color);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -96,6 +104,7 @@ header {
 /* Grid */
 .extension-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;
+  list-style: none;
 }
 
 /* Card */

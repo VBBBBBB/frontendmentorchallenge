@@ -76,17 +76,18 @@ function render() {
     extensionGrid.innerHTML = '';
     
     if (filtered.length === 0) {
-        extensionGrid.style.display = 'none';
-        emptyState.style.display = 'block';
+        extensionGrid.classList.add('hidden');
+        emptyState.classList.remove('hidden');
     } else {
-        extensionGrid.style.display = 'grid';
-        emptyState.style.display = 'none';
+        extensionGrid.classList.remove('hidden');
+        emptyState.classList.add('hidden');
         
         filtered.forEach(ext => {
-            const card = document.createElement('div');
+            const li = document.createElement('li');
+            const card = document.createElement('article');
             card.className = 'ext-card';
             
-            const powerColor = ext.status === 'active' ? '' : 'style="color: var(--success-color);"';
+            const powerClass = ext.status === 'active' ? '' : 'power-active';
             const statusCapitalized = ext.status.charAt(0).toUpperCase() + ext.status.slice(1);
             
             card.innerHTML = `
@@ -106,16 +107,17 @@ function render() {
                         ${statusCapitalized}
                     </div>
                     <div class="card-actions">
-                        <button class="icon-btn" onclick="toggleExt('${ext.id}')" title="${ext.status === 'active' ? 'Disable' : 'Enable'} extension" aria-label="${ext.status === 'active' ? 'Disable' : 'Enable'} ${ext.name}">
-                            <i data-lucide="power" ${powerColor} aria-hidden="true"></i>
+                        <button type="button" class="icon-btn" onclick="toggleExt('${ext.id}')" title="${ext.status === 'active' ? 'Disable' : 'Enable'} extension" aria-label="${ext.status === 'active' ? 'Disable' : 'Enable'} ${ext.name}">
+                            <i data-lucide="power" class="${powerClass}" aria-hidden="true"></i>
                         </button>
-                        <button class="icon-btn delete" onclick="openDeleteModal('${ext.id}')" title="Remove extension" aria-label="Remove ${ext.name}">
+                        <button type="button" class="icon-btn delete" onclick="openDeleteModal('${ext.id}')" title="Remove extension" aria-label="Remove ${ext.name}">
                             <i data-lucide="trash-2" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
             `;
-            extensionGrid.appendChild(card);
+            li.appendChild(card);
+            extensionGrid.appendChild(li);
         });
         
         // Re-initialize dynamic icons inserted into DOM
@@ -170,13 +172,13 @@ window.openDeleteModal = function(id) {
         lastFocusedElement = document.activeElement;
         itemToDeleteId = id;
         modalExtName.textContent = ext.name;
-        deleteModal.style.display = 'flex';
+        deleteModal.classList.remove('hidden');
         cancelBtn.focus();
     }
 };
 
 function closeDeleteModal() {
-    deleteModal.style.display = 'none';
+    deleteModal.classList.add('hidden');
     itemToDeleteId = null;
     if (lastFocusedElement) {
         lastFocusedElement.focus();
