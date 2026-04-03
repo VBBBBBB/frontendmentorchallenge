@@ -1,3 +1,6 @@
+// Ensure linters know about the global lucide object from CDN
+const lucide = window.lucide;
+
 // Mock Data setup directly in JS to avoid CORS fetching issues locally
 let extensions = [
     {
@@ -42,6 +45,7 @@ let extensions = [
 let currentFilter = 'all';
 let currentSearch = '';
 let itemToDeleteId = null;
+let lastFocusedElement = null;
 
 // DOM Elements
 const extensionGrid = document.getElementById('extensionGrid');
@@ -59,12 +63,16 @@ function init() {
     loadTheme();
     render();
     setupEventListeners();
-    // Render Icons
-    lucide.createIcons();
+}
+
+function createElement(tag, className = '', textContent = '') {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (textContent) el.textContent = textContent;
+    return el;
 }
 
 function render() {
-    // Filter logic
     const filtered = extensions.filter(ext => {
         const matchesFilter = currentFilter === 'all' || ext.status === currentFilter;
         const matchesSearch = ext.name.toLowerCase().includes(currentSearch) || 
@@ -72,7 +80,6 @@ function render() {
         return matchesFilter && matchesSearch;
     });
 
-    // Render logic
     extensionGrid.innerHTML = '';
     
     if (filtered.length === 0) {
@@ -87,41 +94,80 @@ function render() {
             const card = document.createElement('article');
             card.className = 'ext-card';
             
-            const powerClass = ext.status === 'active' ? '' : 'power-active';
-            const statusCapitalized = ext.status.charAt(0).toUpperCase() + ext.status.slice(1);
+            // Header
+            const header = createElement('div', 'ext-card-header');
+            const iconWrap = createElement('div', 'ext-icon');
+            const iconSvg = createElement('i');
+            iconSvg.setAttribute('data-lucide', ext.icon);
+            iconWrap.appendChild(iconSvg);
             
-            card.innerHTML = `
-                <div class="ext-card-header">
-                    <div class="ext-icon">
-                        <i data-lucide="${ext.icon}"></i>
-                    </div>
-                    <div class="ext-title">
-                        <h2>${ext.name}</h2>
-                        <span>${ext.version} • ${ext.author}</span>
-                    </div>
-                </div>
-                <p class="ext-desc">${ext.description}</p>
-                <div class="ext-footer">
-                    <div class="status-badge status-${ext.status}">
-                        <div class="status-indicator"></div>
-                        ${statusCapitalized}
-                    </div>
-                    <div class="card-actions">
-                        <button type="button" class="icon-btn" onclick="toggleExt('${ext.id}')" title="${ext.status === 'active' ? 'Disable' : 'Enable'} extension" aria-label="${ext.status === 'active' ? 'Disable' : 'Enable'} ${ext.name}">
-                            <i data-lucide="power" class="${powerClass}" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="icon-btn delete" onclick="openDeleteModal('${ext.id}')" title="Remove extension" aria-label="Remove ${ext.name}">
-                            <i data-lucide="trash-2" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
+            const titleWrap = createElement('div', 'ext-title');
+            const titleH2 = createElement('h2', '', ext.name);
+            const titleSpan = createElement('span', '', `${ext.version} \u2022 ${ext.author}`);
+            titleWrap.appendChild(titleH2);
+            titleWrap.appendChild(titleSpan);
+            
+            header.appendChild(iconWrap);
+            header.appendChild(titleWrap);
+            
+            // Desc
+            const desc = createElement('p', 'ext-desc', ext.description);
+            
+            // Footer
+            const footer = createElement('div', 'ext-footer');
+            
+            const statusCapitalized = ext.status.charAt(0).toUpperCase() + ext.status.slice(1);
+            const statusBadge = createElement('div', `status-badge status-${ext.status}`);
+            const statusInd = createElement('div', 'status-indicator');
+            statusBadge.appendChild(statusInd);
+            statusBadge.appendChild(document.createTextNode(statusCapitalized));
+            
+            const actionsWrap = createElement('div', 'card-actions');
+            
+            // Toggle Button
+            const toggleBtn = createElement('button', 'icon-btn');
+            toggleBtn.setAttribute('type', 'button');
+            toggleBtn.setAttribute('title', `${ext.status === 'active' ? 'Disable' : 'Enable'} extension`);
+            toggleBtn.setAttribute('aria-label', `${ext.status === 'active' ? 'Disable' : 'Enable'} ${ext.name}`);
+            toggleBtn.addEventListener('click', () => toggleExt(ext.id));
+            
+            const pwrIcon = createElement('i');
+            pwrIcon.setAttribute('data-lucide', 'power');
+            pwrIcon.setAttribute('aria-hidden', 'true');
+            if (ext.status !== 'active') {
+                pwrIcon.className = 'power-active';
+            }
+            toggleBtn.appendChild(pwrIcon);
+            
+            // Delete Button
+            const delBtn = createElement('button', 'icon-btn delete');
+            delBtn.setAttribute('type', 'button');
+            delBtn.setAttribute('title', 'Remove extension');
+            delBtn.setAttribute('aria-label', `Remove ${ext.name}`);
+            delBtn.addEventListener('click', () => openDeleteModal(ext.id));
+            
+            const trashIcon = createElement('i');
+            trashIcon.setAttribute('data-lucide', 'trash-2');
+            trashIcon.setAttribute('aria-hidden', 'true');
+            delBtn.appendChild(trashIcon);
+            
+            actionsWrap.appendChild(toggleBtn);
+            actionsWrap.appendChild(delBtn);
+            
+            footer.appendChild(statusBadge);
+            footer.appendChild(actionsWrap);
+            
+            card.appendChild(header);
+            card.appendChild(desc);
+            card.appendChild(footer);
+            
             li.appendChild(card);
             extensionGrid.appendChild(li);
         });
         
-        // Re-initialize dynamic icons inserted into DOM
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
 }
 
@@ -143,18 +189,17 @@ function setupEventListeners() {
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         
-        // Update theme icon
         const iconElement = document.getElementById('themeIcon');
         iconElement.setAttribute('data-lucide', newTheme === 'dark' ? 'sun' : 'moon');
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 
     cancelBtn.addEventListener('click', closeDeleteModal);
     confirmBtn.addEventListener('click', confirmDelete);
 }
 
-// Global functions for inline onclick handlers
-window.toggleExt = function(id) {
+// Logic Functions
+function toggleExt(id) {
     extensions = extensions.map(ext => {
         if (ext.id === id) {
             return { ...ext, status: ext.status === 'active' ? 'inactive' : 'active' };
@@ -162,11 +207,9 @@ window.toggleExt = function(id) {
         return ext;
     });
     render();
-};
+}
 
-let lastFocusedElement = null;
-
-window.openDeleteModal = function(id) {
+function openDeleteModal(id) {
     const ext = extensions.find(e => e.id === id);
     if (ext) {
         lastFocusedElement = document.activeElement;
@@ -175,7 +218,7 @@ window.openDeleteModal = function(id) {
         deleteModal.classList.remove('hidden');
         cancelBtn.focus();
     }
-};
+}
 
 function closeDeleteModal() {
     deleteModal.classList.add('hidden');
@@ -198,11 +241,10 @@ function loadTheme() {
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.getElementById('themeIcon').setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.setAttribute('data-theme', 'dark');
         document.getElementById('themeIcon').setAttribute('data-lucide', 'sun');
     }
 }
 
-// Start app
 document.addEventListener('DOMContentLoaded', init);
